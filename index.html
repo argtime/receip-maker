@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Stop & Shop Receipt Generator</title>
+  <meta charset="UTF-8" />
+  <title>Receipt Generator</title>
   <style>
     body {
       font-family: 'Courier New', monospace;
@@ -14,7 +14,7 @@
       width: 320px;
       padding: 20px;
       border: 1px solid #ccc;
-      margin: 0 auto;
+      margin: 20px auto 0;
       white-space: pre-wrap;
     }
     input, select, button {
@@ -22,6 +22,7 @@
       margin-bottom: 10px;
       display: block;
       width: 100%;
+      box-sizing: border-box;
     }
     .item-entry {
       display: flex;
@@ -39,6 +40,7 @@
     .item-entry button {
       flex: 0 0 auto;
       width: auto;
+      cursor: pointer;
     }
     .receipt-header {
       text-align: center;
@@ -55,9 +57,11 @@
     }
     .receipt-line {
       font-size: 14px;
+      white-space: pre;
     }
     .receipt-summary {
       font-weight: bold;
+      white-space: pre;
     }
     .tax-option {
       display: flex;
@@ -67,21 +71,23 @@
     }
     .tax-option label {
       margin: 0;
+      cursor: pointer;
     }
     #downloadBtn {
       float: right;
       margin-bottom: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h2>Stop & Shop Style Receipt Generator</h2>
+  <h2>Receipt Generator</h2>
   <div>
-    <input id="storeName" placeholder="Store Name">
-    <input id="storeAddress" placeholder="Store Address">
-    <input id="storePhone" placeholder="Store Phone">
-    <input id="transactionNumber" placeholder="Transaction #">
-    <input id="datetime" type="datetime-local">
+    <input id="storeName" placeholder="Store Name" />
+    <input id="storeAddress" placeholder="Store Address" />
+    <input id="storePhone" placeholder="Store Phone" />
+    <input id="transactionNumber" placeholder="Transaction #" />
+    <input id="datetime" type="datetime-local" />
     <select id="paymentMethod" onchange="togglePaymentDetails()">
       <option value="">Select Payment Method</option>
       <option value="cash">Cash</option>
@@ -89,14 +95,14 @@
       <option value="debit">Debit</option>
     </select>
     <div id="cashDetails" style="display: none;">
-      <input id="cashTendered" type="number" placeholder="Amount Tendered">
+      <input id="cashTendered" type="number" placeholder="Amount Tendered" min="0" step="0.01" />
     </div>
     <div id="creditDetails" style="display: none;">
-      <input id="creditType" placeholder="Card Type (e.g. VISA, MASTERCARD)">
+      <input id="creditType" placeholder="Card Type (e.g. VISA, MASTERCARD)" />
     </div>
     <div class="tax-option">
       <label for="removeTax">Remove Tax</label>
-      <input type="checkbox" id="removeTax">
+      <input type="checkbox" id="removeTax" />
     </div>
     <div id="itemsContainer"></div>
     <button onclick="addItem()">Add Item</button>
@@ -114,6 +120,7 @@
       document.getElementById('storeName').value = getCookie('storeName') || '';
       document.getElementById('storeAddress').value = getCookie('storeAddress') || '';
       document.getElementById('storePhone').value = getCookie('storePhone') || '';
+      if (!document.getElementById('itemsContainer').children.length) addItem();
     };
 
     function setCookie(name, value, days = 365) {
@@ -124,7 +131,7 @@
     function getCookie(name) {
       return document.cookie.split('; ').reduce((r, v) => {
         const parts = v.split('=');
-        return parts[0] === name ? decodeURIComponent(parts[1]) : r
+        return parts[0] === name ? decodeURIComponent(parts[1]) : r;
       }, '');
     }
 
@@ -133,9 +140,9 @@
       const div = document.createElement('div');
       div.className = 'item-entry';
       div.innerHTML = `
-        <input placeholder="Item name" class="item-name">
-        <input placeholder="Price" type="number" class="item-price">
-        <input placeholder="Discount" type="number" class="item-discount">
+        <input placeholder="Item name" class="item-name" />
+        <input placeholder="Price" type="number" min="0" step="0.01" class="item-price" />
+        <input placeholder="Discount" type="number" min="0" step="0.01" class="item-discount" />
         <button onclick="this.parentElement.remove()">Remove</button>
       `;
       container.appendChild(div);
@@ -179,8 +186,12 @@
 
       itemElements.forEach(entry => {
         const name = entry.querySelector('.item-name').value.trim();
-        let price = parseFloat(entry.querySelector('.item-price').value.trim()) || 0;
-        const discount = parseFloat(entry.querySelector('.item-discount').value.trim()) || 0;
+        const priceRaw = entry.querySelector('.item-price').value.trim();
+        const discountRaw = entry.querySelector('.item-discount').value.trim();
+        let price = parseFloat(priceRaw);
+        let discount = parseFloat(discountRaw);
+        if (isNaN(price)) price = 0;
+        if (isNaN(discount)) discount = 0;
 
         if (!name || price === 0) return;
 
@@ -213,7 +224,12 @@
     }
 
     function downloadReceiptImage() {
-      html2canvas(document.getElementById('receipt')).then(canvas => {
+      const receipt = document.getElementById('receipt');
+      if (!receipt.innerHTML.trim()) {
+        alert('Please generate the receipt first.');
+        return;
+      }
+      html2canvas(receipt).then(canvas => {
         const link = document.createElement('a');
         link.download = 'receipt.png';
         link.href = canvas.toDataURL();
