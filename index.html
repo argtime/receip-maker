@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Receipt Generator</title>
+  <title>Stop & Shop Receipt Generator</title>
   <style>
     body {
       font-family: 'Courier New', monospace;
@@ -66,13 +66,16 @@
       margin-bottom: 10px;
     }
     .tax-option label {
-      display: inline;
       margin: 0;
+    }
+    #downloadBtn {
+      float: right;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>Receipt Generator</h2>
+  <h2>Stop & Shop Style Receipt Generator</h2>
   <div>
     <input id="storeName" placeholder="Store Name">
     <input id="storeAddress" placeholder="Store Address">
@@ -98,12 +101,14 @@
     <div id="itemsContainer"></div>
     <button onclick="addItem()">Add Item</button>
     <button onclick="generateReceipt()">Generate Receipt</button>
+    <button id="downloadBtn" onclick="downloadReceiptImage()">Download as PNG</button>
   </div>
 
   <div id="receipt"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
-    const taxRate = 0.0635;
+    window.taxRate = 0.0635;
 
     window.onload = function () {
       document.getElementById('storeName').value = getCookie('storeName') || '';
@@ -186,7 +191,7 @@
         }
       });
 
-      const tax = removeTax ? 0 : subtotal * taxRate;
+      const tax = removeTax ? 0 : subtotal * window.taxRate;
       const total = subtotal + tax;
 
       text += '\n';
@@ -205,6 +210,15 @@
       }
 
       document.getElementById('receipt').innerHTML = text;
+    }
+
+    function downloadReceiptImage() {
+      html2canvas(document.getElementById('receipt')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'receipt.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
     }
   </script>
 </body>
