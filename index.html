@@ -27,15 +27,25 @@
       display: flex;
       gap: 5px;
       margin-bottom: 5px;
+      align-items: center;
+    }
+    .item-entry input.item-name {
+      flex: 3;
+    }
+    .item-entry input.item-price,
+    .item-entry input.item-discount {
+      flex: 1;
     }
     .item-entry button {
-      flex-shrink: 0;
+      flex: 0 0 auto;
+      width: auto;
     }
     .receipt-header {
       text-align: center;
       font-size: 22px;
       font-weight: bold;
       margin: 0;
+      line-height: 1.0;
     }
     .receipt-subtext {
       text-align: center;
@@ -48,6 +58,16 @@
     }
     .receipt-summary {
       font-weight: bold;
+    }
+    .tax-option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .tax-option label {
+      display: inline;
+      margin: 0;
     }
   </style>
 </head>
@@ -71,7 +91,10 @@
     <div id="creditDetails" style="display: none;">
       <input id="creditType" placeholder="Card Type (e.g. VISA, MASTERCARD)">
     </div>
-    <label><input type="checkbox" id="removeTax"> Remove Tax</label>
+    <div class="tax-option">
+      <label for="removeTax">Remove Tax</label>
+      <input type="checkbox" id="removeTax">
+    </div>
     <div id="itemsContainer"></div>
     <button onclick="addItem()">Add Item</button>
     <button onclick="generateReceipt()">Generate Receipt</button>
@@ -81,6 +104,24 @@
 
   <script>
     const taxRate = 0.0635;
+
+    window.onload = function () {
+      document.getElementById('storeName').value = getCookie('storeName') || '';
+      document.getElementById('storeAddress').value = getCookie('storeAddress') || '';
+      document.getElementById('storePhone').value = getCookie('storePhone') || '';
+    };
+
+    function setCookie(name, value, days = 365) {
+      const expires = new Date(Date.now() + days * 864e5).toUTCString();
+      document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+    }
+
+    function getCookie(name) {
+      return document.cookie.split('; ').reduce((r, v) => {
+        const parts = v.split('=');
+        return parts[0] === name ? decodeURIComponent(parts[1]) : r
+      }, '');
+    }
 
     function addItem() {
       const container = document.getElementById('itemsContainer');
@@ -107,6 +148,11 @@
       const storeName = document.getElementById('storeName').value.trim();
       const storeAddress = document.getElementById('storeAddress').value.trim();
       const storePhone = document.getElementById('storePhone').value.trim();
+
+      setCookie('storeName', storeName);
+      setCookie('storeAddress', storeAddress);
+      setCookie('storePhone', storePhone);
+
       const transactionNumber = document.getElementById('transactionNumber').value.trim();
       const datetime = document.getElementById('datetime').value;
       const paymentMethod = document.getElementById('paymentMethod').value;
