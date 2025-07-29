@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stop & Shop Receipt Generator</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    #receipt {
+      background: white;
+      width: 320px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      margin: 0 auto;
+      white-space: pre-wrap;
+    }
+    input, select, button {
+      font-family: 'Courier New', monospace;
+      margin-bottom: 10px;
+      display: block;
+      width: 100%;
+    }
+    .item-entry {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .item-entry button {
+      flex-shrink: 0;
+    }
+    .receipt-header {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 0;
+    }
+    .receipt-subtext {
+      text-align: center;
+      font-size: 12px;
+      margin: 0;
+      line-height: 1.0;
+    }
+    .receipt-line {
+      font-size: 14px;
+    }
+    .receipt-summary {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Stop & Shop Style Receipt Generator</h2>
+  <div>
+    <input id="storeName" placeholder="Store Name">
+    <input id="storeAddress" placeholder="Store Address">
+    <input id="storePhone" placeholder="Store Phone">
+    <input id="transactionNumber" placeholder="Transaction #">
+    <input id="datetime" type="datetime-local">
+    <select id="paymentMethod" onchange="togglePaymentDetails()">
+      <option value="">Select Payment Method</option>
+      <option value="cash">Cash</option>
+      <option value="credit">Credit</option>
+      <option value="debit">Debit</option>
+    </select>
+    <div id="cashDetails" style="display: none;">
+      <input id="cashTendered" type="number" placeholder="Amount Tendered">
+    </div>
+    <div id="creditDetails" style="display: none;">
+      <input id="creditType" placeholder="Card Type (e.g. VISA, MASTERCARD)">
+    </div>
+    <label><input type="checkbox" id="removeTax"> Remove Tax</label>
+    <div id="itemsContainer"></div>
+    <button onclick="addItem()">Add Item</button>
+    <button onclick="generateReceipt()">Generate Receipt</button>
+  </div>
+
+  <div id="receipt"></div>
+
+  <script>
+    const taxRate = 0.0635;
+
+    function addItem() {
+      const container = document.getElementById('itemsContainer');
+      const div = document.createElement('div');
+      div.className = 'item-entry';
+      div.innerHTML = `
+        <input placeholder="Item name" class="item-name">
+        <input placeholder="Price" type="number" class="item-price">
+        <input placeholder="Discount" type="number" class="item-discount">
+        <button onclick="this.parentElement.remove()">Remove</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function togglePaymentDetails() {
+      const method = document.getElementById('paymentMethod').value;
+      document.getElementById('cashDetails').style.display = method === 'cash' ? 'block' : 'none';
+      document.getElementById('creditDetails').style.display = (method === 'credit' || method === 'debit') ? 'block' : 'none';
+    }
+
+    function generateReceipt() {
+      let text = '';
+
+      const storeName = document.getElementById('storeName').value.trim();
+      const storeAddress = document.getElementById('storeAddress').value.trim();
+      const storePhone = document.getElementById('storePhone').value.trim();
+      const transactionNumber = document.getElementById('transactionNumber').value.trim();
+      const datetime = document.getElementById('datetime').value;
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      const cashTendered = parseFloat(document.getElementById('cashTendered').value) || 0;
+      const creditType = document.getElementById('creditType').value.trim();
+      const removeTax = document.getElementById('removeTax').checked;
+
+      if (storeName) text += `<div class='receipt-header'>${storeName}</div>\n`;
+      if (storeAddress) text += `<div class='receipt-subtext'>${storeAddress}</div>\n`;
+      if (storePhone) text += `<div class='receipt-subtext'>${storePhone}</div>\n`;
+      if (storeName || storeAddress || storePhone) text += `\n`;
+
+      if (datetime) text += `<div class='receipt-line'>${new Date(datetime).toLocaleString()}</div>`;
+      if (transactionNumber) text += `<div class='receipt-line'>TRANSACTION #: ${transactionNumber}</div>`;
+      text += `\n`;
+
+      const itemElements = document.querySelectorAll('.item-entry');
+      let subtotal = 0;
+
+      itemElements.forEach(entry => {
+        const name = entry.querySelector('.item-name').value.trim();
+        let price = parseFloat(entry.querySelector('.item-price').value.trim()) || 0;
+        const discount = parseFloat(entry.querySelector('.item-discount').value.trim()) || 0;
+
+        if (!name || price === 0) return;
+
+        subtotal += price - discount;
+        text += `<div class='receipt-line'>${name.padEnd(20, ' ')}${price.toFixed(2).padStart(8, ' ')}</div>`;
+        if (discount > 0) {
+          text += `<div class='receipt-line'>  DISCOUNT         ${('-' + discount.toFixed(2)).padStart(8, ' ')}</div>`;
+        }
+      });
+
+      const tax = removeTax ? 0 : subtotal * taxRate;
+      const total = subtotal + tax;
+
+      text += '\n';
+      text += `<div class='receipt-summary'>SUBTOTAL         ${subtotal.toFixed(2).padStart(8, ' ')}</div>`;
+      if (!removeTax) {
+        text += `<div class='receipt-summary'>CT TAX 6.35%     ${tax.toFixed(2).padStart(8, ' ')}</div>`;
+      }
+      text += `<div class='receipt-summary'>TOTAL            ${total.toFixed(2).padStart(8, ' ')}</div>`;
+
+      if ((paymentMethod === 'credit' || paymentMethod === 'debit') && creditType) {
+        text += `<div class='receipt-line'>Paid with ${paymentMethod.toUpperCase()} ${creditType}</div>`;
+      } else if (paymentMethod === 'cash' && cashTendered > 0) {
+        const change = cashTendered - total;
+        text += `<div class='receipt-line'>Cash Tendered    ${cashTendered.toFixed(2).padStart(8, ' ')}</div>`;
+        text += `<div class='receipt-line'>Change Due       ${change.toFixed(2).padStart(8, ' ')}</div>`;
+      }
+
+      document.getElementById('receipt').innerHTML = text;
+    }
+  </script>
+</body>
+</html>
